@@ -1,0 +1,331 @@
+{
+  "name": "LinkedIn Auto Poster",
+  "nodes": [
+    {
+      "parameters": {
+        "postAs": "organization",
+        "organization": "107868371",
+        "text": "={{ $('Code').item.json.post }}",
+        "shareMediaCategory": "IMAGE",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [
+        1360,
+        32
+      ],
+      "id": "403f76b2-e5f1-412c-8afb-8e7bceb0a7f4",
+      "name": "Create a post",
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "0wE1hnaGAu3PnamW",
+          "name": "LinkedIn account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -192,
+        32
+      ],
+      "id": "36a8a5b4-d569-4b3d-8cee-5ebf3566fa92",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are an AI social media strategist tasked with writing a professional yet engaging LinkedIn post.\n\n**Goal:** Create a concise, insightful LinkedIn update about the *latest AI trends, news, or breakthroughs* (from the last 24–48 hours). Use the Tavily Web Search tool to fetch the latest information.\n\n**Instructions:**\n1. Analyze the Tavily search results to find 1–2 hot AI trends, product launches, or notable research updates.\n2. Write the post in a conversational and confident tone, keeping it under 250–300 words.\n3. Use formatting styles like **bold** for keywords or highlights.\n4. Add **3–5 hashtags** relevant to AI (e.g., #AI, #GenAI, #AgenticAI).\n5. Include **2–3 emojis** (avoid overuse, only where it adds impact).\n6. Include a strong hook in the first line to grab attention.\n7. End with a short **CTA** (e.g., *What do you think about this? Let me know below!*).\n\n**Output Format (JSON):**\n{\n  \"post\": \"Your formatted LinkedIn post text here with hashtags and emojis\"\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        16,
+        32
+      ],
+      "id": "57f187b1-bd3b-4e5d-9175-fc1d33c83de0",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        16,
+        288
+      ],
+      "id": "d99d0379-863f-4c44-8d28-9e133e67f7a0",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "F2DaFiwpNO3FhIN5",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"query\": \"latest update in Quantum AI field?\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        208,
+        288
+      ],
+      "id": "00950174-818d-48cb-9d9c-a6452bebd427",
+      "name": "Tavily Web Search"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the raw output from the AI Agent node\nconst rawOutput = $json.output || \"\";\n\n// Remove ```json and ``` markers if present\nlet cleaned = rawOutput.replace(/```json|```/g, '').trim();\n\n// Parse JSON if it's valid\nlet post = \"\";\ntry {\n  const parsed = JSON.parse(cleaned);\n  post = parsed.post || \"\";\n} catch (e) {\n  post = cleaned; // fallback if JSON.parse fails\n}\n\n// Return a clean object\nreturn [{ json: { post } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        368,
+        32
+      ],
+      "id": "890b7ef8-0329-4404-bcfa-270719d0bf97",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert content strategist.\n\n**Goal:** Create a single, catchy line (max 8–10 words) from the given LinkedIn post text.  \nThis line should:\n- Capture the essence of the post.\n- Be visually impactful, as it will be used for an image or banner.\n- Avoid hashtags, emojis, or special characters.\n- Use simple, powerful words.\n\n**Input Post:** \n{{ $json.post }}\n\n**Output Format (JSON):**\n{\n  \"headline\": \"Your 1-line image headline here\"\n}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        576,
+        32
+      ],
+      "id": "6dbc7459-dd75-4725-9d44-b0763b3da0e7",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        576,
+        288
+      ],
+      "id": "0a34ae3a-8166-47e0-8bee-1e6a057311ef",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "F2DaFiwpNO3FhIN5",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawText = $json.text || \"\";\n\n// Remove code block markers\nlet cleaned = rawText.replace(/```json|```/g, '').trim();\n\nlet finalText = \"\";\ntry {\n  // Parse the JSON if valid\n  const parsed = JSON.parse(cleaned);\n  finalText = parsed.headline || \"\";\n} catch (e) {\n  // If parsing fails, try to clean manually\n  finalText = cleaned.replace(/^{|}$/g, '')\n                     .replace(/\"headline\":/i, '')\n                     .replace(/[\"{}]/g, '')\n                     .trim();\n}\n\n// Return only the raw string\nreturn [{ json: { text: finalText } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        928,
+        32
+      ],
+      "id": "a8df0789-49a1-4648-89f8-780b0cf50f67",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.stability.ai/v2beta/stable-image/generate/core",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "authorization",
+              "value": "Bearer sk-TK7VBilf8RLsaNciyBt7Sp6mGO7WBfCpyUx1zg2pwqUrp65v"
+            },
+            {
+              "name": "accept",
+              "value": "image/*"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "={{$json.text}}"
+            },
+            {
+              "name": "output_format",
+              "value": "webp"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1136,
+        32
+      ],
+      "id": "bc15f330-059d-4b23-9012-6396551129fe",
+      "name": "HTTP Request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tavily Web Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Create a post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6b89ded1-c0aa-4701-9d44-99e2eb2d0a7f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3cf1c6c85346d867e25a38c1dcfebea24024ea9e9d91ea08d9ffd0fb3bedc1ac"
+  },
+  "id": "SrtzLtH5KfpuY10u",
+  "tags": []
+}
